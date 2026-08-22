@@ -14,7 +14,9 @@ import ast
 
 
 # Allowed built-ins (keep relatively safe)
+# Note: __import__ is required for normal "import" statements to work.
 SAFE_BUILTINS = {
+    "__import__": __import__,
     "abs": abs,
     "all": all,
     "any": any,
@@ -44,6 +46,9 @@ SAFE_BUILTINS = {
     "ValueError": ValueError,
     "TypeError": TypeError,
     "RuntimeError": RuntimeError,
+    "True": True,
+    "False": False,
+    "None": None,
 }
 
 
@@ -54,10 +59,18 @@ def execute_code(
 ) -> Dict[str, Any]:
     """
     Execute Python code and capture stdout, stderr, and a result variable if present.
+
+    Returns a dict with:
+      - success: bool
+      - stdout: str
+      - stderr: str
+      - error: Optional[str]
+      - result: Any (if the code assigned to a variable named `result`)
     """
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
 
+    # Restricted globals
     restricted_globals = {
         "__builtins__": SAFE_BUILTINS,
         "__name__": "__simulation__",
@@ -68,7 +81,7 @@ def execute_code(
         import numpy as np
         import pandas as pd
         import matplotlib
-        matplotlib.use("Agg")
+        matplotlib.use("Agg")  # non-interactive backend
         import matplotlib.pyplot as plt
         import seaborn as sns
         from scipy import stats, integrate, optimize, signal, ndimage
@@ -126,15 +139,18 @@ def execute_code(
         "stderr": "",
         "error": None,
         "result": None,
-        "figures": [],
+        "figures": [],  # reserved for future plot capture
     }
 
     try:
+        # Basic syntax check first
         ast.parse(code)
 
         with contextlib.redirect_stdout(stdout_capture), contextlib.redirect_stderr(stderr_capture):
+            # Execute in the restricted namespace
             exec(code, restricted_globals)
 
+            # Try to pull a variable named `result` if the user/LLM created one
             if "result" in restricted_globals:
                 result_data["result"] = restricted_globals["result"]
 
