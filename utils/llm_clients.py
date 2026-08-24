@@ -33,7 +33,6 @@ def chat_with_provider(
     if provider == "gemini":
         return _gemini_chat(model, messages, api_key=api_key, temperature=temperature, max_tokens=max_tokens)
 
-    # OpenAI-compatible providers (Grok, OpenRouter, and many others)
     return _openai_compatible_chat(
         provider=provider,
         model=model,
@@ -65,7 +64,6 @@ def _openai_compatible_chat(
         if not api_key:
             raise ValueError("OpenRouter API key is required")
     else:
-        # Generic OpenAI-compatible
         if not base_url:
             raise ValueError("base_url is required for generic OpenAI-compatible provider")
 
@@ -94,7 +92,6 @@ def _gemini_chat(
 
     genai.configure(api_key=api_key)
 
-    # Convert messages to Gemini format
     system_instruction = None
     contents = []
     for msg in messages:
@@ -151,7 +148,6 @@ def _ollama_chat(
         return data.get("message", {}).get("content", "")
 
 
-# Sensible default models per provider
 DEFAULT_MODELS = {
     "grok": "grok-2-latest",
     "gemini": "gemini-1.5-pro",
